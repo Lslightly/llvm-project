@@ -1709,6 +1709,18 @@ public:
     return Relocation();
   }
 
+  /// Creates instructions to OR a value in memory with a specified immediate
+  virtual bool createOr(MCInst& Inst, const MCExpr* Expr, uint64_t ImmVal, MCContext* Ctx) const {
+    llvm_unreachable("not implemented");
+    return false;
+  }
+
+  /// Creates instructions to AND a value in memory with a specified immediate
+  virtual bool createAnd(MCInst& Inst, const MCExpr* Expr, uint64_t ImmVal, MCContext* Ctx) const {
+    llvm_unreachable("not implemented");
+    return false;
+  }
+
   /// Returns true if instruction is a call frame pseudo instruction.
   virtual bool isCFI(const MCInst &Inst) const {
     return Inst.getOpcode() == TargetOpcode::CFI_INSTRUCTION;

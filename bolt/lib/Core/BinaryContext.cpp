@@ -2108,7 +2108,9 @@ BinaryContext::registerSection(const Twine &SectionName,
 BinarySection &
 BinaryContext::registerOrUpdateSection(const Twine &Name, unsigned ELFType,
                                        unsigned ELFFlags, uint8_t *Data,
-                                       uint64_t Size, unsigned Alignment) {
+                                       uint64_t Size, unsigned Alignment,
+                                       bool IsLocal,
+                                       uint64_t Address) {
   auto NamedSections = getSectionByName(Name);
   if (NamedSections.begin() != NamedSections.end()) {
     assert(std::next(NamedSections.begin()) == NamedSections.end() &&
@@ -2128,7 +2130,7 @@ BinaryContext::registerOrUpdateSection(const Twine &Name, unsigned ELFType,
   }
 
   return registerSection(
-      new BinarySection(*this, Name, Data, Size, Alignment, ELFType, ELFFlags));
+      new BinarySection(*this, Name, Data, Size, Alignment, ELFType, ELFFlags, IsLocal, Address));
 }
 
 void BinaryContext::deregisterSectionName(const BinarySection &Section) {

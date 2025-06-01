@@ -4156,6 +4156,13 @@ void RewriteInstance::patchELFPHDRTable() {
         AddedSegment = true;
       }
       break;
+    case ELF::PT_LOAD:
+      // Rewrite segment info
+      NewPhdr.p_vaddr = BC->SegmentMapInfo[NewPhdr.p_vaddr].Address;
+      NewPhdr.p_memsz = BC->SegmentMapInfo[NewPhdr.p_vaddr].Size;
+      NewPhdr.p_offset = BC->SegmentMapInfo[NewPhdr.p_vaddr].FileOffset;
+      NewPhdr.p_filesz = BC->SegmentMapInfo[NewPhdr.p_vaddr].FileSize;
+      break;
     }
     OS.write(reinterpret_cast<const char *>(&NewPhdr), sizeof(NewPhdr));
   }
@@ -4272,7 +4279,7 @@ void RewriteInstance::rewriteNoteSections() {
   }
 
   // Write new note sections.
-  for (BinarySection &Section : BC->nonAllocatableSections()) {
+  for (BinarySection &Section : BC->sections()) {
     if (Section.getOutputFileOffset() || !Section.getAllocAddress())
       continue;
 
@@ -4497,7 +4504,7 @@ RewriteInstance::getOutputSections(ELFObjectFile<ELFT> *File,
   }
 
   // Create entries for new non-allocatable sections.
-  for (BinarySection &Section : BC->nonAllocatableSections()) {
+  for (BinarySection &Section : BC->sections()) {
     if (Section.getOutputFileOffset() <= LastFileOffset)
       continue;
 
@@ -4507,7 +4514,7 @@ RewriteInstance::getOutputSections(ELFObjectFile<ELFT> *File,
 
     ELFShdrTy NewSection;
     NewSection.sh_type = Section.getELFType();
-    NewSection.sh_addr = 0;
+    NewSection.sh_addr = Section.isAllocatable()?Section.getAddress():0;
     NewSection.sh_offset = Section.getOutputFileOffset();
     NewSection.sh_size = Section.getOutputSize();
     NewSection.sh_entsize = 0;
@@ -5640,8 +5647,16 @@ void RewriteInstance::rewriteFile() {
     if (Function->getImageAddress() == 0 || Function->getImageSize() == 0)
       continue;
 
-    assert(Function->getImageSize() <= Function->getMaxSize() &&
-           "Unexpected large function");
+    if (Function->getImageSize() > Function->getMaxSize()) {
+      errs() << "Unexpected large function\n";
+      errs() << "BOLT-ERROR: new function size (0x"
+             << Twine::utohexstr(Function->getImageSize())
+             << ") is larger than the maximum allowed size (0x"
+             << Twine::utohexstr(Function->getMaxSize()) << ") for function "
+             << *Function << '\n';
+      assert(Function->getImageSize() <= Function->getMaxSize() &&
+            "Unexpected large function");
+    }
 
     const auto HasAddress = [](const FunctionFragment &FF) {
       return FF.empty() ||

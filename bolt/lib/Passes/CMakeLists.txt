@@ -45,6 +45,7 @@ add_llvm_library(LLVMBOLTPasses
   ValidateMemRefs.cpp
   VeneerElimination.cpp
   RetpolineInsertion.cpp
+  HALO.cpp
 
   NO_EXPORT
   DISABLE_LLVM_LINK_LLVM_DYLIB

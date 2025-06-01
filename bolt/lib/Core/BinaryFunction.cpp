@@ -2161,7 +2161,7 @@ Error BinaryFunction::buildCFG(MCPlusBuilder::AllocatorIdTy AllocatorId) {
       addCFIPlaceholders(Offset, InsertBB);
     }
 
-    const bool IsBlockEnd = MIB->isTerminator(Instr);
+    const bool IsBlockEnd = MIB->isTerminator(Instr) || BC.MIB->isCall(Instr);
     IsLastInstrNop = MIB->isNoop(Instr);
     if (!IsLastInstrNop)
       LastInstrOffset = Offset;

@@ -207,6 +207,9 @@ public:
   /// Mark injected functions
   bool IsInjected = false;
 
+  /// Mark functions for which successful rewriting is essential
+  bool IsMissionCritical = false;
+
   using LSDATypeTableTy = SmallVector<uint64_t, 0>;
 
   /// List of DWARF CFI instructions. Original CFI from the binary must be

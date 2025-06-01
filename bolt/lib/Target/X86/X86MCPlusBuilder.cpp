@@ -2470,6 +2470,28 @@ public:
     return Relocation({RelOffset, RelSymbol, RelType, RelAddend, 0});
   }
 
+  bool createOr(MCInst &Inst, const MCExpr *Target, uint64_t ImmVal,
+                MCContext *Ctx) const override {
+    Inst = MCInstBuilder(X86::OR32mi).addReg(X86::NoRegister) // BaseReg
+                                     .addImm(1)               // ScaleAmt
+                                     .addReg(X86::NoRegister) // IndexReg
+                                     .addExpr(Target)         // Displacement
+                                     .addReg(X86::NoRegister) // AddrSegmentReg
+                                     .addImm(ImmVal);
+    return true;
+  }
+
+  bool createAnd(MCInst &Inst, const MCExpr *Target, uint64_t ImmVal,
+                 MCContext *Ctx) const override {
+    Inst = MCInstBuilder(X86::AND32mi).addReg(X86::NoRegister) // BaseReg
+                                      .addImm(1)               // ScaleAmt
+                                      .addReg(X86::NoRegister) // IndexReg
+                                      .addExpr(Target)         // Displacement
+                                      .addReg(X86::NoRegister) // AddrSegmentReg
+                                      .addImm(ImmVal);
+    return true;
+  }
+
   bool replaceImmWithSymbolRef(MCInst &Inst, const MCSymbol *Symbol,
                                int64_t Addend, MCContext *Ctx, int64_t &Value,
                                uint64_t RelType) const override {

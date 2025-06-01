@@ -16,6 +16,7 @@
 #include "bolt/Passes/FixRISCVCallsPass.h"
 #include "bolt/Passes/FixRelaxationPass.h"
 #include "bolt/Passes/FrameOptimizer.h"
+#include "bolt/Passes/HALO.h"
 #include "bolt/Passes/Hugify.h"
 #include "bolt/Passes/IdenticalCodeFolding.h"
 #include "bolt/Passes/IndirectCallPromotion.h"
@@ -58,6 +59,8 @@ extern cl::opt<bolt::IdenticalCodeFolding::ICFLevel, false,
                llvm::bolt::DeprecatedICFNumericOptionParser>
     ICF;
 
+extern cl::list<std::string> HALO;
+
 static cl::opt<bool>
 DynoStatsAll("dyno-stats-all",
   cl::desc("print dyno stats after each stage"),
@@ -65,7 +68,7 @@ DynoStatsAll("dyno-stats-all",
 
 static cl::opt<bool>
     EliminateUnreachable("eliminate-unreachable",
-                         cl::desc("eliminate unreachable code"), cl::init(true),
+                         cl::desc("eliminate unreachable code"), cl::init(false),
                          cl::cat(BoltOptCategory));
 
 static cl::opt<bool> JTFootprintReductionFlag(
@@ -227,7 +230,7 @@ static cl::opt<bool> RegReAssign(
 static cl::opt<bool> SimplifyConditionalTailCalls(
     "simplify-conditional-tail-calls",
     cl::desc("simplify conditional tail calls by removing unnecessary jumps"),
-    cl::init(true), cl::cat(BoltOptCategory));
+    cl::init(false), cl::cat(BoltOptCategory));
 
 static cl::opt<bool> SimplifyRODataLoads(
     "simplify-rodata-loads",
@@ -253,7 +256,7 @@ static cl::opt<bool> StringOps(
 static cl::opt<bool> StripRepRet(
     "strip-rep-ret",
     cl::desc("strip 'repz' prefix from 'repz retq' sequence (on by default)"),
-    cl::init(true), cl::cat(BoltOptCategory));
+    cl::init(false), cl::cat(BoltOptCategory));
 
 static cl::opt<bool> VerifyCFG("verify-cfg",
                                cl::desc("verify the CFG after every pass"),
@@ -408,6 +411,9 @@ Error BinaryFunctionPassManager::runAllPasses(BinaryContext &BC) {
   Manager.registerPass(
       std::make_unique<SpecializeMemcpy1>(NeverPrint, opts::SpecializeMemcpy1),
       !opts::SpecializeMemcpy1.empty());
+
+  Manager.registerPass(std::make_unique<HALO>(NeverPrint),
+                       !opts::HALO.empty());
 
   Manager.registerPass(std::make_unique<InlineMemcpy>(NeverPrint),
                        opts::StringOps);

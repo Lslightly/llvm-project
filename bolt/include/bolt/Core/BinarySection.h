@@ -174,10 +174,11 @@ public:
   // TODO: pass Data as StringRef/ArrayRef? use StringRef::copy method.
   BinarySection(BinaryContext &BC, const Twine &Name, uint8_t *Data,
                 uint64_t Size, unsigned Alignment, unsigned ELFType,
-                unsigned ELFFlags)
+                unsigned ELFFlags,
+                bool IsLocal = false, uint64_t Address = 0)
       : BC(BC), Name(Name.str()),
         Contents(reinterpret_cast<const char *>(Data), Data ? Size : 0),
-        Address(0), Size(Size), Alignment(Alignment), ELFType(ELFType),
+        Address(Address), Size(Size), Alignment(Alignment), ELFType(ELFType),
         ELFFlags(ELFFlags), IsFinalized(true), OutputName(Name.str()),
         OutputSize(Size), OutputContents(Contents), SectionNumber(++Count) {
     assert(Alignment > 0 && "section alignment must be > 0");

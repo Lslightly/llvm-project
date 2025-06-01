@@ -1119,7 +1119,9 @@ public:
                                          unsigned ELFFlags,
                                          uint8_t *Data = nullptr,
                                          uint64_t Size = 0,
-                                         unsigned Alignment = 1);
+                                         unsigned Alignment = 1,
+                                         bool IsLocal = false,
+                                         uint64_t Address = 0);
 
   /// Register the information for the note (non-allocatable) section
   /// with the given /p Name.  If the section already exists, the
