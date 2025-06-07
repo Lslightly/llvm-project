@@ -12,6 +12,7 @@
 
 #include "bolt/Core/BinarySection.h"
 #include "bolt/Core/BinaryContext.h"
+#include "bolt/Utils/CommandLineOpts.h"
 #include "bolt/Utils/Utils.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/Support/CommandLine.h"
@@ -153,8 +154,12 @@ uint64_t BinarySection::write(raw_ostream &OS) const {
 
 void BinarySection::flushPendingRelocations(raw_pwrite_stream &OS,
                                             SymbolResolverFuncTy Resolver) {
-  if (PendingRelocations.empty() && Patches.empty())
+  if (PendingRelocations.empty() && Patches.empty()) {
+    if (opts::Verbosity >= 1) {
+      BC.outs() << "BOLT: flushPendingRelocations PendingRelocations.empty && Patches.empty " << getName() << '\n';
+    }
     return;
+  }
 
   const uint64_t SectionAddress = getAddress();
 
@@ -164,15 +169,23 @@ void BinarySection::flushPendingRelocations(raw_pwrite_stream &OS,
   // sections, the output offset should always be a valid one.
   const uint64_t SectionFileOffset =
       isAllocatable() ? getInputFileOffset() : getOutputFileOffset();
-  LLVM_DEBUG(
-      dbgs() << "BOLT-DEBUG: flushing pending relocations for section "
+      if (opts::Verbosity >= 1)
+      BC.outs() << "BOLT-DEBUG: flushing pending relocations for section "
              << getName() << '\n'
              << "  address: 0x" << Twine::utohexstr(SectionAddress) << '\n'
-             << "  offset: 0x" << Twine::utohexstr(SectionFileOffset) << '\n');
+             << "  offset: 0x" << Twine::utohexstr(SectionFileOffset) << '\n';
 
-  for (BinaryPatch &Patch : Patches)
+  for (BinaryPatch &Patch : Patches) {
+    if (opts::Verbosity >= 1) {
+      BC.outs() << "BOLT-DEBUG: pwrite Patch:\n"
+                << "  Size " << Patch.Bytes.size() << '\n'
+                << "  Offset " << SectionFileOffset + Patch.Offset << '\n'
+                << "  Size+Offset " << Patch.Bytes.size() + SectionFileOffset + Patch.Offset
+                << " <= Pos " << OS.tell() << "? " << (Patch.Bytes.size() + SectionFileOffset <= OS.tell()) << '\n';
+    }
     OS.pwrite(Patch.Bytes.data(), Patch.Bytes.size(),
               SectionFileOffset + Patch.Offset);
+  }
 
   for (Relocation &Reloc : PendingRelocations) {
     uint64_t Value = Reloc.Addend;

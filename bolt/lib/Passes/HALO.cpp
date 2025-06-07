@@ -8,6 +8,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "bolt/Passes/HALO.h"
+#include "bolt/Core/BinarySection.h"
+#include "llvm/Support/raw_ostream.h"
 
 #define DEBUG_TYPE "bolt-halo"
 
@@ -49,6 +51,10 @@ uint64_t HALO::extendDataSegment(BinaryContext &BC) {
     errs() << "BOLT-ERROR: HALO: unable to find data section\n";
     exit(1);
   }
+
+  outs() << "BOLT: .data OutputFileOffset: " << DataSection->getOutputFileOffset() << " InputFileOffset: " << DataSection->getInputFileOffset() << '\n';
+  outs() << " BOLT: .data type: " << DataSection->getELFType() << '\n'
+        << *DataSection << '\n';
 
   // Find the segment to which the data section belongs
   auto Address = DataSection->getAddress();
@@ -97,14 +103,15 @@ uint64_t HALO::createStateSection(BinaryContext &BC) {
   // Register and return the address of the new section
   // NOTE: We could make this ELF::SHT_NOBITS, but for now it's staying as
   // ELF::SHT_PROGBITS for increased flexibility.
+  auto flag = BinarySection::getFlags(false, false, true);
   auto &Section = BC.registerOrUpdateSection(Name, ELF::SHT_PROGBITS,
-                                             BinarySection::getFlags(false,
-                                                                     false,
-                                                                     true),
+                                             flag,
                                              copyByteArray(InitialData),
                                              InitialData.size(),
                                              InitialData.size(),
                                              false, Address);
+  outs() << " BOLT: .data.halo_state type: " << Section.getELFType() << '\n'
+        << Section << '\n';
   outs() << "BOLT-INFO: HALO: state variable located at 0x"
          << Twine::utohexstr(Section.getAddress()) << "\n";
   return Section.getAddress();

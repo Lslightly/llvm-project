@@ -5741,8 +5741,19 @@ void RewriteInstance::rewriteFile() {
     OS.seek(SavedPos);
   }
 
+  BinarySection* HaloStateSec = nullptr;
+  uint64_t LastOffset = 0;
   // Write all allocatable sections - reloc-mode text is written here as well
   for (BinarySection &Section : BC->allocatableSections()) {
+    if (Section.getName() == ".data.halo_state") {
+      HaloStateSec = &Section;
+      continue;
+    }
+    if (opts::Verbosity >= 1)
+      BC->outs() << "BOLT: write all allocatable sections " << Section << '\n'
+      << "OutputFileOffset " << Section.getOutputFileOffset() << '\n'
+      << "isFinalized " << Section.isFinalized()
+      << " OutputData " << Section.getOutputData() << " isLinkOnly " << Section.isLinkOnly() << '\n';
     if (!Section.isFinalized() || !Section.getOutputData())
       continue;
     if (Section.isLinkOnly())
@@ -5756,6 +5767,12 @@ void RewriteInstance::rewriteFile() {
                  << Section.getOutputFileOffset() << '\n';
     OS.seek(Section.getOutputFileOffset());
     Section.write(OS);
+    LastOffset = OS.tell();
+  }
+  if (HaloStateSec) {
+    OS.seek(HaloStateSec->getOutputFileOffset());
+    HaloStateSec->write(OS);
+    OS.seek(LastOffset);
   }
 
   for (BinarySection &Section : BC->allocatableSections())
