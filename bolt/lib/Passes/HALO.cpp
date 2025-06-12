@@ -110,6 +110,7 @@ uint64_t HALO::createStateSection(BinaryContext &BC) {
                                              InitialData.size(),
                                              InitialData.size(),
                                              false, Address);
+  Section.setOutputAddress(Address);
   outs() << " BOLT: .data.halo_state type: " << Section.getELFType() << '\n'
         << Section << '\n';
   outs() << "BOLT-INFO: HALO: state variable located at 0x"
