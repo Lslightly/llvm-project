@@ -2900,6 +2900,10 @@ public:
     }
   }
 
+  MCPhysReg getRetRegister() const override {
+    return X86::RAX;
+  }
+
   void createPause(MCInst &Inst) const override {
     Inst.clear();
     Inst.setOpcode(X86::PAUSE);
@@ -3006,6 +3010,20 @@ public:
     }
     Inst.setOpcode(NewOpcode);
     Inst.addOperand(MCOperand::createReg(Reg));
+  }
+
+  void createMov64RIInst(MCInst& Inst, int64_t Imm, MCPhysReg Reg) const override {
+    Inst.clear();
+    Inst.setOpcode(X86::MOV64ri);
+    Inst.addOperand(MCOperand::createReg(Reg));
+    Inst.addOperand(MCOperand::createImm(Imm));
+  }
+
+  void createMov32RIInst(MCInst& Inst, int32_t Imm, MCPhysReg Reg) const override {
+    Inst.clear();
+    Inst.setOpcode(X86::MOV32ri);
+    Inst.addOperand(MCOperand::createReg(Reg));
+    Inst.addOperand(MCOperand::createImm(Imm));
   }
 
   void createPushFlags(MCInst &Inst, unsigned Size) const override {

@@ -2,6 +2,7 @@ add_llvm_library(LLVMBOLTPasses
   ADRRelaxationPass.cpp
   Aligner.cpp
   AllocCombiner.cpp
+  AllocCtxMgr.cpp
   AsmDump.cpp
   BinaryPasses.cpp
   CMOVConversion.cpp

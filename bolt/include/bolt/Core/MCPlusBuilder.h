@@ -496,6 +496,14 @@ public:
     llvm_unreachable("not implemented");
   }
 
+  virtual void createMov64RIInst(MCInst& Inst, int64_t Imm, MCPhysReg Reg)  const {
+    llvm_unreachable("not implemented");
+  }
+
+  virtual void createMov32RIInst(MCInst& Inst, int32_t Imm, MCPhysReg Reg)  const {
+    llvm_unreachable("not implemented");
+  }
+
   virtual void createPushFlags(MCInst &Inst, unsigned Size) const {
     llvm_unreachable("not implemented");
   }
@@ -534,6 +542,10 @@ public:
   ///
   /// Note: this should depend on a used calling convention.
   virtual MCPhysReg getIntArgRegister(unsigned ArgNo) const {
+    llvm_unreachable("not implemented");
+  }
+
+  virtual MCPhysReg getRetRegister() const {
     llvm_unreachable("not implemented");
   }
 

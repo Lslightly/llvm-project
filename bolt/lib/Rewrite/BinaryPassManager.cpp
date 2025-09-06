@@ -10,6 +10,7 @@
 #include "bolt/Passes/ADRRelaxationPass.h"
 #include "bolt/Passes/Aligner.h"
 #include "bolt/Passes/AllocCombiner.h"
+#include "bolt/Passes/AllocCtxMgr.h"
 #include "bolt/Passes/AsmDump.h"
 #include "bolt/Passes/CMOVConversion.h"
 #include "bolt/Passes/ContinuityStats.h"
@@ -60,6 +61,7 @@ extern cl::opt<bolt::IdenticalCodeFolding::ICFLevel, false,
     ICF;
 
 extern cl::list<std::string> HALO;
+extern cl::list<std::string> AllocCtxs;
 
 static cl::opt<bool>
 DynoStatsAll("dyno-stats-all",
@@ -387,6 +389,8 @@ Error BinaryFunctionPassManager::runAllPasses(BinaryContext &BC) {
   Manager.registerPass(std::make_unique<ValidateInternalCalls>(NeverPrint));
 
   Manager.registerPass(std::make_unique<ValidateMemRefs>(NeverPrint));
+
+  Manager.registerPass(std::make_unique<AllocCtxMgr>(), !AllocCtxs.empty());
 
   if (opts::Instrument)
     Manager.registerPass(std::make_unique<Instrumentation>(NeverPrint));
