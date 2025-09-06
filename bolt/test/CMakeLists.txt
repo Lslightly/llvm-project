@@ -70,3 +70,5 @@ add_lit_testsuites(BOLT ${CMAKE_CURRENT_SOURCE_DIR}
   PARAMS ${BOLT_TEST_PARAMS}
   DEPENDS ${BOLT_TEST_DEPS}
 )
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Passes/AllocCtxMgr)
