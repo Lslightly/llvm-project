@@ -5,7 +5,9 @@
 #include "bolt/Utils/CommandLineOpts.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCSymbol.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cstdint>
@@ -88,12 +90,30 @@ BinaryBasicBlock::iterator AllocCtxMgr::findInst(uintptr_t Addr, BinaryBasicBloc
     return II;
 }
 
+AllocCtxMgr::CalleeType AllocCtxMgr::getCalleeType(InstIter II) {
+    auto& Inst = *II;
+    if (!BC->MIB->isCall(Inst)) {
+        return Other;
+    }
+    auto* SymRefExpr = dyn_cast<MCSymbolRefExpr>(Inst.getOperand(0).getExpr());
+    if (!SymRefExpr) {
+        return Other;
+    }
+    auto CalleeName = SymRefExpr->getSymbol().getName();
+    if (auto Ty = CalleeName2Type.find(CalleeName); Ty != CalleeName2Type.end()) {
+        return Ty->second;
+    }
+    return Other;
+}
+
+
+
 void AllocCtxMgr::replaceMalloc(size_t Grp, InstIter MallocII, BinaryBasicBlock* BB) {
     /*
         mov size, %edi
         push %rsi
         push %rsi
-        mov $1, %rsi
+        mov $Grp, %rsi
         call malloc_wrapper@PLT
         pop %rsi
         pop %rsi
@@ -110,16 +130,59 @@ void AllocCtxMgr::replaceMalloc(size_t Grp, InstIter MallocII, BinaryBasicBlock*
     BB->replaceInstruction(MallocII, WrapperInsts);
 }
 
+void AllocCtxMgr::wrapContext(size_t Grp, InstIter II, BinaryBasicBlock* BB) {
+    /*
+        push %rdi
+        push %rax
+        mov $Grp, %rdi
+        call alloc_enter@PLT
+        pop %rax
+        pop %rdi
+        II
+        push %rdi
+        push %rax
+        call alloc_exit
+        pop %rax
+        pop %rdi
+    */
+    InstructionListType WrapperInsts(12);
+    size_t I = 0;
+    auto RDI = BC->MIB->getIntArgRegister(0);
+    auto RAX = BC->MIB->getRetRegister();
+    BC->MIB->createPushRegister(WrapperInsts[I++], RDI, 8);
+    BC->MIB->createPushRegister(WrapperInsts[I++], RAX, 8);
+    BC->MIB->createMov32RIInst(WrapperInsts[I++], Grp, RDI);
+    BC->MIB->createCall(WrapperInsts[I++], Name2Symbol["alloc_enter"], BC->Ctx.get());
+    BC->MIB->createPopRegister(WrapperInsts[I++], RAX, 8);
+    BC->MIB->createPopRegister(WrapperInsts[I++], RDI, 8);
+    WrapperInsts[I++] = *II;
+    BC->MIB->createPushRegister(WrapperInsts[I++], RDI, 8);
+    BC->MIB->createPushRegister(WrapperInsts[I++], RAX, 8);
+    BC->MIB->createCall(WrapperInsts[I++], Name2Symbol["alloc_exit"], BC->Ctx.get());
+    BC->MIB->createPopRegister(WrapperInsts[I++], RAX, 8);
+    BC->MIB->createPopRegister(WrapperInsts[I++], RDI, 8);
+    BB->replaceInstruction(II, WrapperInsts);
+}
+
 Error AllocCtxMgr::runOnFunctions(BinaryContext& BC) {
     init(BC);
     parseOpts();
     for (auto& [Grp, Addrs]: Grp2Addrs) {
         for (auto Addr: Addrs) {
             BinaryBasicBlock* BB = nullptr;
-            auto MallocII = findInst(Addr, BB);
-            BC.printInstruction(outs(), *MallocII);
+            auto TgtII = findInst(Addr, BB);
+            BC.printInstruction(outs(), *TgtII);
             BC.printInstructions(outs(), BB->begin(), BB->end());
-            replaceMalloc(Grp, MallocII, BB);
+            auto CalleeType = getCalleeType(TgtII);
+            switch (CalleeType) {
+                case Malloc:
+                case New:
+                    replaceMalloc(Grp, TgtII, BB);
+                    break;
+                case Other:
+                    wrapContext(Grp, TgtII, BB);
+                    break;
+            }
             BC.printInstructions(outs(), BB->begin(), BB->end());
         }
     }

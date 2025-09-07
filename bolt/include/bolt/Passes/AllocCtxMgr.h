@@ -20,6 +20,20 @@ using Grp2AddrMapTy = DenseMap<size_t, SmallVector<uintptr_t, 8>>;
 using InstIter = BinaryBasicBlock::iterator;
 
 class AllocCtxMgr: public BinaryFunctionPass {
+    enum CalleeType {
+        Malloc,
+        New,
+        Other,
+    };
+    const DenseMap<StringRef, CalleeType> CalleeName2Type = {
+        {"malloc@PLT", Malloc},
+        {"malloc@plt", Malloc},
+        {"malloc$plt/1", Malloc},
+        {"malloc", Malloc},
+        {"new", New},
+        {"_Znwm", New},
+        {"_Znam", New},
+    };
     BinaryContext* BC;
     Grp2AddrMapTy Grp2Addrs;
     DenseMap<StringRef, const MCSymbol*> Name2Symbol;
@@ -31,7 +45,9 @@ class AllocCtxMgr: public BinaryFunctionPass {
     const MCSymbol* findPLTSymbol(StringRef FuncName);
     void init(BinaryContext& BC);
     InstIter findInst(uintptr_t Addr, BinaryBasicBlock*& BB);
+    CalleeType getCalleeType(InstIter II);
     void replaceMalloc(size_t Grp, InstIter MallocII, BinaryBasicBlock* BB);
+    void wrapContext(size_t Grp, InstIter II, BinaryBasicBlock* BB);
 public:
     explicit AllocCtxMgr(): BinaryFunctionPass(false) {}
     const char* getName() const override { return "Alloc Context Manager"; }
