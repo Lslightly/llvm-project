@@ -1,25 +1,22 @@
 #include <cstdint>
-#include <cstdio>
 #include <iostream>
+#include <memory>
 #include <vector>
-#include <stdint.h>
-
 #include "node.hh"
 
+
 int main() {
-    std::vector<Node*> nodes;
+    std::vector<std::shared_ptr<Node>> nodes;
     std::vector<uintptr_t> ptrs;
+
     for (auto i = 0; i < 10; i++) {
-        auto* node = new Node();
-        nodes.push_back(node);
-        ptrs.push_back(uintptr_t(node));
+        auto ptr = std::make_shared<Node>();
+        nodes.push_back(ptr);
+        ptrs.push_back(uintptr_t(ptr.get()));
     }
+
     std::cout << "size: " << sizeof(Node) << std::endl;
     for (auto ptr: ptrs) {
         std::cout << ptr << std::endl;
     }
-    for (auto* node: nodes) {
-        delete node;
-    }
-    return 0;
 }

@@ -9,25 +9,10 @@ THREAD_LOCAL size_t TLS_GRP = 0;
 extern "C" {
 #endif
 
-/*
-TODO:
-    1. bolt rewrite pass
-    2. make_shared primitive test case
-*/
-void alloc_enter(size_t grp) {
-    printf("alloc enter %ld\n", grp);
-    TLS_GRP = grp;
-}
-
-void alloc_exit(size_t grp) {
-    printf("alloc exit %ld\n", grp);
-    TLS_GRP = TLS_NOGRP;
-}
-
 void* malloc_wrapper(size_t size, size_t grp) {
     alloc_enter(grp);
     void* ptr = malloc(size);
-    alloc_exit(grp);
+    alloc_exit();
     return ptr;
 }
 

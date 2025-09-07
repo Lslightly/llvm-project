@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 void alloc_enter(size_t grp);
-void alloc_exit(size_t grp);
+void alloc_exit();
 void* malloc_wrapper(size_t size, size_t grp);
 void* new_wrapper(size_t size, size_t grp);
 

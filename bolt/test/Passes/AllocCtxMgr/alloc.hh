@@ -6,8 +6,8 @@
 struct GrpState {
     size_t sizeclass;
 
-}
+};
 
-
+void m_init();
 
 #endif

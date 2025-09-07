@@ -1,9 +1,12 @@
 #include <cstddef>
+#include <cstdio>
 #include <new>
+#define _GNU_SOURCE
 #include "dlfcn.h"
 
 
 #include "ctx.h"
+#include "alloc.hh"
 
 static void *(*libc_malloc)(size_t);
 static void (*libc_free)(void *);
@@ -19,16 +22,22 @@ extern "C" {
 #endif
 
 void* malloc(size_t size) {
+    if (!libc_malloc) {
+        m_init();
+    }
     size_t grp = TLS_GRP;
     if (InMalloc || !useGrpAlloc(grp)) {
         return libc_malloc(size);
     };
     InMalloc = true;
+    printf("grp %lu\n", grp);
+    void* ptr = libc_malloc(size);
     InMalloc = false;
+    return ptr;
 }
 
 void free(void* ptr) {
-    
+    libc_free(ptr);
 }
 
 #ifdef __cplusplus
