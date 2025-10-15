@@ -1,9 +1,15 @@
+set(CMAKE_CXX_STANDARD 20)
+
 add_library(allocctx SHARED ctx.cc ctx.s)
 target_compile_options(allocctx PRIVATE -g -fPIC)
 
 add_library(alloc SHARED alloc.cc)
 target_compile_options(alloc PRIVATE -g -fPIC)
 target_link_libraries(alloc PRIVATE allocctx)
+
+add_library(demo_alloc SHARED demo_alloc.cc)
+target_compile_options(demo_alloc PRIVATE -g -fPIC)
+target_link_libraries(demo_alloc PRIVATE allocctx)
 
 add_executable(bin bin.cc stub.cc)
 target_compile_options(bin PRIVATE -g)

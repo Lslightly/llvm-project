@@ -167,6 +167,7 @@ void AllocCtxMgr::wrapContext(size_t Grp, InstIter II, BinaryBasicBlock* BB) {
 Error AllocCtxMgr::runOnFunctions(BinaryContext& BC) {
     init(BC);
     parseOpts();
+    size_t SuccCnt = 0;
     for (auto& [Grp, Addrs]: Grp2Addrs) {
         for (auto Addr: Addrs) {
             BinaryBasicBlock* BB = nullptr;
@@ -174,6 +175,7 @@ Error AllocCtxMgr::runOnFunctions(BinaryContext& BC) {
             BC.printInstruction(outs(), *TgtII);
             BC.printInstructions(outs(), BB->begin(), BB->end());
             auto CalleeType = getCalleeType(TgtII);
+            SuccCnt += 1;
             switch (CalleeType) {
                 case Malloc:
                 case New:
@@ -182,10 +184,14 @@ Error AllocCtxMgr::runOnFunctions(BinaryContext& BC) {
                 case Other:
                     wrapContext(Grp, TgtII, BB);
                     break;
+                default:
+                    SuccCnt -= 1;
+                    break;
             }
             BC.printInstructions(outs(), BB->begin(), BB->end());
         }
     }
+    outs() << "AllocCtxMgr succeed in replacing " << SuccCnt << " callsite\n";
     return Error::success();
 }
 
